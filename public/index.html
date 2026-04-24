@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Distributed DB Client</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: white;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: #1e293b;
+      padding: 15px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 5px;
+      border: none;
+    }
+
+    button {
+      cursor: pointer;
+      background: #38bdf8;
+      color: black;
+      font-weight: bold;
+    }
+
+    .panel {
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 15px;
+    }
+
+    .log {
+      height: 200px;
+      overflow-y: auto;
+      background: black;
+      padding: 10px;
+      font-size: 12px;
+    }
+
+    .records {
+      margin-top: 10px;
+    }
+
+    .record {
+      background: #334155;
+      padding: 8px;
+      margin: 5px 0;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>📡 Sistema Distribuido - Cliente</header>
+
+<div class="container">
+
+  <div class="panel">
+    <h3>🔗 Conexión</h3>
+    <input id="url" placeholder="ws://localhost:3002 o URL de ngrok">
+    <button onclick="connect()">Conectar</button>
+    <button onclick="disconnect()">Desconectar</button>
+  </div>
+
+  <div class="panel">
+    <h3>➕ Crear Registro</h3>
+    <input id="name" placeholder="Nombre">
+    <input id="value" placeholder="Valor">
+    <button onclick="create()">Enviar</button>
+  </div>
+
+  <div class="panel">
+    <h3>📋 Registros</h3>
+    <button onclick="read()">Refresh</button>
+    <div id="records" class="records"></div>
+  </div>
+
+  <div class="panel">
+    <h3>📜 Historial WS</h3>
+    <div id="log" class="log"></div>
+  </div>
+
+</div>
+
+<script>
+let socket = null;
+
+function log(msg) {
+  const logDiv = document.getElementById("log");
+  logDiv.innerHTML += `<div>> ${msg}</div>`;
+  logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+function connect() {
+  const url = document.getElementById("url").value;
+
+  socket = new WebSocket(url);
+
+  socket.onopen = () => log("✅ Conectado");
+  socket.onclose = () => log("❌ Desconectado");
+  socket.onerror = (e) => log("⚠️ Error conexión");
+
+  socket.onmessage = (event) => {
+    log("📩 " + event.data);
+
+    const msg = JSON.parse(event.data);
+
+    if (msg.type === "read_response") {
+      renderRecords(msg.records);
+    }
+
+    if (msg.type === "change") {
+      read(); // auto refresh distribuido
+    }
+  };
+}
+
+function disconnect() {
+  if (socket) socket.close();
+}
+
+function send(data) {
+  if (!socket || socket.readyState !== 1) {
+    alert("No conectado");
+    return;
+  }
+
+  socket.send(JSON.stringify(data));
+  log("📤 " + JSON.stringify(data));
+}
+
+function create() {
+  const name = document.getElementById("name").value;
+  const value = document.getElementById("value").value;
+
+  send({
+    type: "write",
+    data: { name, value }
+  });
+}
+
+function read() {
+  send({ type: "read" });
+}
+
+function deleteRecord(id) {
+  send({ type: "delete", id });
+}
+
+function renderRecords(records) {
+  const container = document.getElementById("records");
+  container.innerHTML = "";
+
+  records.forEach(r => {
+    const div = document.createElement("div");
+    div.className = "record";
+    div.innerHTML = `
+      <b>${r.name}</b>: ${r.value}
+      <button onclick="deleteRecord('${r.id}')">Eliminar</button>
+    `;
+    container.appendChild(div);
+  });
+}
+</script>
+
+</body>
+</html>
