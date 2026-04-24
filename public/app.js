@@ -178,7 +178,6 @@ function toggleConnect() {
     document.getElementById('remoteWriteCard').style.opacity      = '1';
     document.getElementById('remoteWriteCard').style.pointerEvents = 'auto';
     document.getElementById('readBtn').disabled = false;
-    remoteRead(); // auto-fetch on connect
   };
 
   remoteWs.onmessage = ({ data }) => {

@@ -27,6 +27,9 @@ function attach(httpServer) {
     // Tell the connecting client which node it reached
     send(ws, { type: 'welcome', nodeId: db.NODE_ID });
 
+    // Send current records to the new client
+    send(ws, { type: 'read_response', nodeId: db.NODE_ID, records: db.getAll() });
+
     ws.on('message', (raw) => {
       let msg;
       try { msg = JSON.parse(raw); }

@@ -21,6 +21,14 @@ const PORT = process.env.PORT || 3002;
 const app    = express();
 const server = http.createServer(app);
 
+server.on('error', err => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Puerto ${PORT} ya está en uso. Usa otro puerto o cierra el proceso que lo usa.`);
+    process.exit(1);
+  }
+  throw err;
+});
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 

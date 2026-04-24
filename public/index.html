@@ -121,11 +121,17 @@ function connect() {
 
   socket.onmessage = (event) => {
     log("📩 " + event.data);
+    console.log("Received:", event.data);
 
     const msg = JSON.parse(event.data);
 
     if (msg.type === "read_response") {
       renderRecords(msg.records);
+    }
+
+    if (msg.type === "update_response") {
+      log("✅ Registro actualizado");
+      read(); // refresh
     }
 
     if (msg.type === "change") {
@@ -146,6 +152,7 @@ function send(data) {
 
   socket.send(JSON.stringify(data));
   log("📤 " + JSON.stringify(data));
+  console.log("Sent:", data);
 }
 
 function create() {
@@ -166,6 +173,14 @@ function deleteRecord(id) {
   send({ type: "delete", id });
 }
 
+function editRecord(id) {
+  const newName = prompt("Nuevo nombre:");
+  const newValue = prompt("Nuevo valor:");
+  if (newName !== null && newValue !== null) {
+    send({ type: "update", id, data: { name: newName, value: newValue } });
+  }
+}
+
 function renderRecords(records) {
   const container = document.getElementById("records");
   container.innerHTML = "";
@@ -175,6 +190,7 @@ function renderRecords(records) {
     div.className = "record";
     div.innerHTML = `
       <b>${r.name}</b>: ${r.value}
+      <button onclick="editRecord('${r.id}')">Editar</button>
       <button onclick="deleteRecord('${r.id}')">Eliminar</button>
     `;
     container.appendChild(div);
